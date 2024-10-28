@@ -1,0 +1,53 @@
+import pandas as pd
+import requests
+from bs4 import BeautifulSoup
+
+# Define your user-agent
+user_agent = "CityInfoScript/1.0 (https://yourdomain.com; your.email@example.com)"  # Replace with relevant details
+headers = {'User-Agent': user_agent}
+
+# Load the Excel file
+file_path = r"C:\Users\kevin.phannhu\Documents\Piattaforma Città Test PY\Test Piattaforma Città PY.xlsx"  # Replace with your file path
+sheet_name = 'Sheet1'  # Replace with your sheet name if different
+df = pd.read_excel(file_path, sheet_name=sheet_name)
+
+# Display the initial DataFrame and its columns for debugging
+print("Initial DataFrame:")
+print(df)
+print("Columns in DataFrame:", df.columns)  # Print the column names
+
+def get_official_website(city_name):
+    # URL for the Italian Wikipedia page
+    url = f"https://it.wikipedia.org/wiki/{city_name.replace(' ', '_')}"  # Replace spaces with underscores for URL
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        # Parse the Wikipedia page
+        soup = BeautifulSoup(response.content, 'html.parser')
+        # Find the first external link (usually the official website)
+        ext_link = soup.find('a', {'rel': 'nofollow', 'class': 'external text'})
+        if ext_link:
+            return ext_link['href']
+    return None
+
+# Check what the first column is named and access it accordingly
+# Assuming city names are in the first column regardless of header
+for index, row in df.iterrows():
+    city_name = row[0]  # Access the first column directly
+    print(f"Searching for: {city_name}")  # Debugging output
+    official_website = get_official_website(city_name)
+    if official_website:
+        df.at[index, 'Sito ufficiale'] = official_website  # Update column B
+        print(f"Updated {city_name} with link: {official_website}")  # Debugging output
+    else:
+        df.at[index, 'Sito ufficiale'] = 'Link not found'
+        print(f"No link found for {city_name}")  # Debugging output
+
+# Save the modified DataFrame back to Excel
+df.to_excel(file_path, sheet_name=sheet_name, index=False)
+
+# Display the updated DataFrame for debugging
+print("Updated DataFrame:")
+print(df)
+
+print("Official websites added to Excel file.")
